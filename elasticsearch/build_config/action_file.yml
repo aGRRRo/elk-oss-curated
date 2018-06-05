@@ -1,0 +1,18 @@
+---
+actions:
+  1:
+    action: delete_indices
+    description: Removing indicies older than ${CURATOR_UNIT_COUNT} ${CURATOR_UNITS}
+    options:
+      ignore_empty_list: True
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: ${CURATOR_FILTER_VALUE}
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: ${CURATOR_UNITS}
+      unit_count: ${CURATOR_UNIT_COUNT}

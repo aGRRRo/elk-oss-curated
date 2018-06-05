@@ -1,0 +1,66 @@
+version: '2.0'
+
+services:
+  'elasticsearch':
+    container_name: elasticsearch
+    hostname: elasticsearch
+    build:
+      context: .
+      dockerfile: ./elasticsearch/Dockerfile
+    image: "elasticsearch-curated:latest"
+    restart: on-failure
+    ports:
+      - "${DEPLOYMENT_ELASTIC_PORT}:9200"
+      - "9300:9300"
+    networks:
+      - default
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./data/elasticsearch/:/usr/share/elasticsearch/data
+    environment:
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      CURATOR_LOG_LEVEL: ${CURATOR_LOG_LEVEL}
+      CURATOR_FILTER_VALUE: ${CURATOR_FILTER_VALUE}
+      CURATOR_UNITS: ${CURATOR_UNITS}
+      CURATOR_UNIT_COUNT: ${CURATOR_UNIT_COUNT}
+
+  'kibana':
+    depends_on:
+     - elasticsearch
+    container_name: kibana
+    hostname: kibana
+    image: docker.elastic.co/kibana/kibana-oss:6.2.4
+    restart: on-failure
+    ports:
+      - "${DELOPYMENT_KIBANA_PORT}:5601"
+    networks:
+      - default
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+
+  'logstash':
+    depends_on:
+     - elasticsearch
+    container_name: logstash
+    hostname: logstash
+    image: docker.elastic.co/logstash/logstash-oss:6.2.4
+    restart: on-failure
+    ports:
+      - "${DEPLOYMENT_LOGSTASH_PORT}:5044"
+    networks:
+      - default
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+
+networks:
+    default:
+      driver: bridge
+      ipam:
+        config:
+        -
+          subnet: 172.30.4.0/24
